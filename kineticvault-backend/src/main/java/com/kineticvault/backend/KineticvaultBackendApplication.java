@@ -8,5 +8,5 @@ public class KineticvaultBackendApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(KineticvaultBackendApplication.class, args);
 	}
-
+	
 }

@@ -35,7 +35,7 @@ const AnalysisResultScreen = ({ route, navigation }) => {
 
     Alert.alert(
       'Block Sender',
-      `Are you sure you want to block this sender (${senderToBlock})?\n\nYou will no longer receive SMS messages from them.`,
+      `Are you sure you want to block this sender (${senderToBlock})?\n\nAndroid will ask you to temporarily set Kinetic Vault as the default SMS app. After blocking, you can switch back.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -61,83 +61,41 @@ const AnalysisResultScreen = ({ route, navigation }) => {
     );
   };
 
-  const getPermissionMessage = status => {
-    const realmeNote = status?.isRealmeFamily
-      ? '\n\nOn Realme/Oppo/OnePlus, approve the Caller ID & spam or Default SMS screen if Android shows it.'
-      : '';
-
-    return (
-      'Android only allows sender blocking when this app has the Call Screening role or is selected as the Default SMS app. ' +
-      'Tap Continue, approve the Android permission screen, and Kinetic Vault will retry the block automatically.' +
-      realmeNote
-    );
-  };
-
   const showBlockFailure = message => {
     Alert.alert(
       'Block Failed',
       message ||
-        'Could not block the sender. Please grant the Android blocking role and try again.',
+        'Could not block the sender. Please set Kinetic Vault as the default SMS app and try again.',
     );
   };
 
-  const promptForBlockingRole = status => {
-    Alert.alert('Permission Required', getPermissionMessage(status), [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Continue',
-        onPress: requestBlockingRoleAndRetry,
-      },
-    ]);
-  };
+  const offerRestorePreviousSms = (blockResult) => {
+    if (!blockResult?.canRestorePreviousSms) return;
 
-  const handleBlockResult = (blockResult, fallbackStatus) => {
-    console.log('[Block] Block result:', blockResult);
-
-    if (blockResult?.success) {
-      Alert.alert('Success', `Successfully blocked ${senderToBlock}.`);
-      return true;
-    }
-
-    if (blockResult?.requiresRole) {
-      promptForBlockingRole(blockResult.status || fallbackStatus);
-      return true;
-    }
-
-    showBlockFailure(blockResult?.message);
-    return false;
-  };
-
-  const requestBlockingRoleAndRetry = async () => {
-    setIsBlocking(true);
     const { SmsModule } = NativeModules;
+    if (!SmsModule?.restorePreviousDefaultSms) return;
 
-    try {
-      if (!SmsModule) {
-        throw new Error('SmsModule is not available');
-      }
-
-      console.log('[Block] Requesting Android sender-blocking role...');
-      const roleStatus = await SmsModule.requestSenderBlockingRole();
-      logBlockStatus('Role request result', roleStatus);
-
-      if (!roleStatus?.canBlockSender) {
-        showBlockFailure(
-          roleStatus?.errorMessage ||
-            'Android did not grant the required blocking role. Open Default Apps or Caller ID & spam settings, grant the role, then try again.',
-        );
-        return;
-      }
-
-      console.log('[Block] Role granted; retrying block:', senderToBlock);
-      const blockResult = await SmsModule.blockSender(senderToBlock);
-      handleBlockResult(blockResult, roleStatus);
-    } catch (error) {
-      console.log('[Block] Role request handled safely:', error?.message || error);
-      showBlockFailure(error?.message);
-    } finally {
-      setIsBlocking(false);
-    }
+    Alert.alert(
+      'Restore Default SMS App?',
+      'The sender has been blocked. Would you like to switch your default SMS app back to the previous one?',
+      [
+        {
+          text: 'Keep Current',
+          style: 'cancel',
+        },
+        {
+          text: 'Restore',
+          onPress: async () => {
+            try {
+              const result = await SmsModule.restorePreviousDefaultSms();
+              console.log('[Block] Restore previous SMS result:', result);
+            } catch (error) {
+              console.log('[Block] Restore error:', error?.message || error);
+            }
+          },
+        },
+      ],
+    );
   };
 
   const executeBlock = async () => {
@@ -149,19 +107,81 @@ const AnalysisResultScreen = ({ route, navigation }) => {
         throw new Error('SmsModule is not available');
       }
 
+      // Use the combined flow: request Default SMS role if needed → block → offer restore
+      if (SmsModule.blockSenderWithRoleFlow) {
+        console.log('[Block] Using combined role+block flow for:', senderToBlock);
+        const blockResult = await SmsModule.blockSenderWithRoleFlow(senderToBlock);
+        console.log('[Block] Combined flow result:', blockResult);
+
+        if (blockResult?.success) {
+          Alert.alert('Success', `Successfully blocked ${senderToBlock}.`);
+          offerRestorePreviousSms(blockResult);
+          return;
+        }
+
+        if (blockResult?.requiresRole) {
+          showBlockFailure(
+            blockResult?.message ||
+              'Android requires Kinetic Vault to be set as the Default SMS app to block senders. Please approve the prompt and try again.',
+          );
+          return;
+        }
+
+        showBlockFailure(blockResult?.message);
+        return;
+      }
+
+      // Fallback: old separate flow for older module versions
+      console.log('[Block] Falling back to separate role+block flow');
       const status = SmsModule.getSenderBlockStatus
         ? await SmsModule.getSenderBlockStatus()
         : null;
       logBlockStatus('Initial status', status);
 
       if (!status?.canBlockSender) {
-        promptForBlockingRole(status);
+        Alert.alert('Permission Required',
+          'Android requires this app to be the Default SMS app to block senders. ' +
+          'Tap Continue to open the Android settings prompt.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Continue',
+              onPress: async () => {
+                setIsBlocking(true);
+                try {
+                  const roleStatus = await SmsModule.requestSenderBlockingRole();
+                  logBlockStatus('Role request result', roleStatus);
+                  if (roleStatus?.canBlockSender) {
+                    const result = await SmsModule.blockSender(senderToBlock);
+                    console.log('[Block] Block result:', result);
+                    if (result?.success) {
+                      Alert.alert('Success', `Successfully blocked ${senderToBlock}.`);
+                    } else {
+                      showBlockFailure(result?.message);
+                    }
+                  } else {
+                    showBlockFailure('Default SMS role was not granted.');
+                  }
+                } catch (error) {
+                  showBlockFailure(error?.message);
+                } finally {
+                  setIsBlocking(false);
+                }
+              },
+            },
+          ],
+        );
         return;
       }
 
       console.log('[Block] Attempting to block:', senderToBlock);
       const blockResult = await SmsModule.blockSender(senderToBlock);
-      handleBlockResult(blockResult, status);
+      console.log('[Block] Block result:', blockResult);
+      if (blockResult?.success) {
+        Alert.alert('Success', `Successfully blocked ${senderToBlock}.`);
+      } else {
+        showBlockFailure(blockResult?.message);
+      }
     } catch (error) {
       console.log('[Block] Block flow handled safely:', error?.message || error);
       showBlockFailure(error?.message);

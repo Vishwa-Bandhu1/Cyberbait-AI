@@ -3,12 +3,13 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "configure:backend": "node scripts/write-local-backend-host.js",
     "reverse:backend": "adb reverse tcp:8080 tcp:8080 || echo Backend reverse skipped",
-    "preandroid": "npm run reverse:backend",
+    "preandroid": "npm run reverse:backend && npm run configure:backend",
     "android": "react-native run-android",
     "postandroid": "npm run reverse:backend",
     "ios": "react-native run-ios",
-    "prestart": "npm run reverse:backend",
+    "prestart": "npm run reverse:backend && npm run configure:backend",
     "lint": "eslint .",
     "start": "react-native start",
     "test": "jest"

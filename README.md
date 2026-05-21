@@ -15,6 +15,8 @@
 - **Professional Security Reports**: Automatically compiles findings into downloadable, structured PDF reports using **iText 7**.
 - **Secure Cloud Sync**: Stores analysis history and reports securely in a **MongoDB Atlas** cluster.
 - **Modern Backend**: High-performance REST APIs structured with Spring Boot 3 featuring proactive error handling and model fallbacks.
+- **Dynamic Backend Connectivity & Failover Routing**: Auto-detects local host configurations (adb-reverse USB mode vs. LAN/Wi-Fi connection) and handles temporary connection drops gracefully via a custom client-side retry/failover mechanism with health probes.
+- **Dedicated Health Checks**: Integrated `/api/health` endpoint on the backend for real-time connection status validation to prevent app lock-ups or freeze-ups during network transitions.
 
 ---
 
@@ -87,11 +89,13 @@ cd Kinetic-Vault
    npm install
    # or yarn install
    ```
-3. Run the application:
+   - **Configure local backend connectivity** (runs automatically with `npm run android` or `npm run start`):
+     ```bash
+     npm run configure:backend
+     ```
+     *This script auto-detects connected USB devices to set up `adb reverse` (port 8080 mapping) or resolves local Wi-Fi LAN IP to enable physical devices to reach the backend host.*
    - **For Android**:
      ```bash
-     # If using a physical device, run:
-     adb reverse tcp:8080 tcp:8080
      npm run android
      ```
    - **For iOS** *(macOS only)*:

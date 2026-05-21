@@ -1,109 +1,29 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {NativeModules, Platform} from 'react-native';
+import {createBackendAvailabilityManager} from './backendManager';
+import {
+  describeAxiosError,
+  getApiBaseUrls,
+  getDebugNetworkSummary,
+} from './connectivity';
 
 // Set this to true when testing against the live Render backend.
 const USE_DEPLOYED = false;
 const DEPLOYED_URL = 'https://kineticvault-backend.onrender.com/api';
 const SCAN_HISTORY_KEY = 'scan_history';
 const MAX_LOCAL_HISTORY_ITEMS = 100;
-// Optional local override. Examples: '10.0.2.2' for Android emulator,
-// your computer's LAN IP for a physical device over Wi-Fi.
-const LOCAL_BACKEND_HOST_OVERRIDE = '';
-
-const getHostFromUrl = url => {
-  const match = url?.match(/^https?:\/\/\[?([^:/\]]+)\]?(?::\d+)?/);
-  return match?.[1];
-};
-
-const sourceCodeConstants = NativeModules.SourceCode?.getConstants?.();
-const bundlerUrl =
-  NativeModules.SourceCode?.scriptURL || sourceCodeConstants?.scriptURL;
-const bundlerHost =
-  getHostFromUrl(bundlerUrl) ||
-  Platform.constants?.ServerHost?.split(':')?.[0];
-
-const isLoopbackHost = host =>
-  !host || ['localhost', '127.0.0.1', '::1'].includes(host);
-
-const isLikelyAndroidEmulator = () => {
-  if (Platform.OS !== 'android') {
-    return false;
-  }
-
-  const constants = Platform.constants || {};
-  const deviceText = [
-    constants.Brand,
-    constants.Fingerprint,
-    constants.Manufacturer,
-    constants.Model,
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-
-  return (
-    deviceText.includes('emulator') ||
-    deviceText.includes('generic') ||
-    deviceText.includes('genymotion') ||
-    deviceText.includes('sdk_gphone') ||
-    deviceText.includes('google_sdk')
-  );
-};
-
-const getLocalHost = () => {
-  if (LOCAL_BACKEND_HOST_OVERRIDE) {
-    return LOCAL_BACKEND_HOST_OVERRIDE;
-  }
-
-  if (Platform.OS === 'android') {
-    if (bundlerHost === '10.0.3.2') {
-      return '10.0.3.2';
-    }
-
-    if (isLoopbackHost(bundlerHost)) {
-      return isLikelyAndroidEmulator() ? '10.0.2.2' : '127.0.0.1';
-    }
-  }
-
-  return bundlerHost || '127.0.0.1';
-};
-
-const buildLocalUrl = host => `http://${host}:8080/api`;
-
-const unique = values => [...new Set(values.filter(Boolean))];
-
-const getLocalHostCandidates = () => {
-  const hosts = [getLocalHost()];
-
-  if (Platform.OS === 'android') {
-    if (bundlerHost === '10.0.3.2') {
-      hosts.push('10.0.3.2');
-    } else {
-      hosts.push('10.0.2.2', '127.0.0.1');
-    }
-
-    if (!isLoopbackHost(bundlerHost)) {
-      hosts.push(bundlerHost);
-    }
-  }
-
-  return unique(hosts);
-};
-
-const LOCAL_HOST = getLocalHost();
-const API_BASE_URLS = USE_DEPLOYED
-  ? [DEPLOYED_URL]
-  : getLocalHostCandidates().map(buildLocalUrl);
-
+const API_BASE_URLS = getApiBaseUrls({
+  useDeployed: USE_DEPLOYED,
+  deployedUrl: DEPLOYED_URL,
+});
 const BASE_URL = API_BASE_URLS[0];
 const API_TIMEOUT_MS = 30000;
 const TEXT_ANALYSIS_TIMEOUT_MS = 8000;
 const IMAGE_TIMEOUT_MS = 70000;
 const HISTORY_TIMEOUT_MS = 4000;
 const API_RETRY_ATTEMPTS = 2;
-const isAndroidReverseHost =
-  Platform.OS === 'android' && LOCAL_HOST === '127.0.0.1';
+
+const unique = values => [...new Set(values.filter(Boolean))];
 let activeBaseUrl = BASE_URL;
 
 const api = axios.create({
@@ -111,23 +31,26 @@ const api = axios.create({
   timeout: API_TIMEOUT_MS,
 });
 
+const networkSummary = getDebugNetworkSummary();
+
 console.log(
-  '[API] Using backend host:',
-  USE_DEPLOYED ? 'Render (deployed)' : LOCAL_HOST,
-  'baseURL:',
-  BASE_URL,
-  API_BASE_URLS.length > 1 ? `fallbacks: ${API_BASE_URLS.slice(1).join(', ')}` : '',
+  '[API] Backend target:',
+  USE_DEPLOYED ? 'Render deployment' : networkSummary.runtimeTarget,
+  'baseURLs:',
+  API_BASE_URLS.join(' -> '),
+);
+console.log(
+  '[API] Network context:',
+  `platform=${networkSummary.platform}`,
+  `metroHost=${networkSummary.bundlerHost}`,
+  `configuredLanHost=${networkSummary.configuredLanHost}`,
+  `backendMode=${networkSummary.backendMode}`,
+  `adbReverseActive=${networkSummary.adbReverseActive}`,
 );
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-const isRetryableError = error => {
-  const status = error?.response?.status;
-  if (!status) {
-    return true;
-  }
-  return status === 408 || status === 425 || status === 429 || status >= 500;
-};
+const isRetryableError = error => describeAxiosError(error).retryable;
 
 const requestWithRetry = async (
   requestFactory,
@@ -154,8 +77,45 @@ const logRecoverableApiIssue = (...args) => {
   console.log(...args);
 };
 
-const getNextBaseUrl = triedBaseUrls =>
-  API_BASE_URLS.find(baseUrl => !triedBaseUrls.includes(baseUrl));
+const backendManager = createBackendAvailabilityManager({
+  baseUrls: API_BASE_URLS,
+  logger: logRecoverableApiIssue,
+});
+
+const formatRequestUrl = config => {
+  if (/^https?:\/\//i.test(config.url || '')) {
+    return config.url;
+  }
+  return `${config.baseURL || ''}${config.url || ''}`;
+};
+
+const shouldRetryWithAlternateHost = details =>
+  !USE_DEPLOYED &&
+  ['timeout', 'unreachable', 'refused', 'no-internet-or-route'].includes(
+    details.type,
+  );
+
+const isLoopbackBaseUrl = baseUrl =>
+  /^https?:\/\/(127\.0\.0\.1|localhost)(?::\d+)?/i.test(baseUrl || '');
+
+const getBackendDiagnosticHint = (baseUrl, details) => {
+  if (
+    networkSummary.runtimeTarget === 'android-device' &&
+    isLoopbackBaseUrl(baseUrl) &&
+    ['timeout', 'unreachable', 'refused'].includes(details.type)
+  ) {
+    return 'adb reverse is missing, stale, or the backend is not listening on laptop port 8080. Run: adb reverse tcp:8080 tcp:8080 and verify with adb reverse --list.';
+  }
+
+  if (
+    networkSummary.runtimeTarget === 'android-device' &&
+    networkSummary.backendMode === 'lan'
+  ) {
+    return 'LAN mode requires the phone to route to the laptop IP. USB tethering normally should use adb reverse mode instead.';
+  }
+
+  return 'Ensure Spring Boot is running on port 8080, bound to 0.0.0.0, and reachable from this device.';
+};
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
@@ -553,9 +513,23 @@ const buildImageFallback = () =>
 
 // Request interceptor for debugging logs
 api.interceptors.request.use(
-  config => {
+  async config => {
+    const preferredBaseUrl = config.baseURL || activeBaseUrl || BASE_URL;
+    const resolvedBaseUrl = config._backendBaseUrlLocked
+      ? preferredBaseUrl
+      : await backendManager.resolveBaseUrl({
+          preferredBaseUrl,
+          reason: `${config.method?.toUpperCase() || 'REQUEST'} ${config.url || ''}`,
+        });
+
+    config.baseURL = resolvedBaseUrl || preferredBaseUrl;
+    config.metadata = {
+      ...(config.metadata || {}),
+      startedAt: Date.now(),
+    };
+
     console.log(
-      `[API Request] ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`,
+      `[API Request] ${config.method?.toUpperCase()} ${formatRequestUrl(config)}`,
     );
     return config;
   },
@@ -565,52 +539,72 @@ api.interceptors.request.use(
 // Response interceptor for error handling logs
 api.interceptors.response.use(
   response => {
-    activeBaseUrl = response.config.baseURL || BASE_URL;
+    activeBaseUrl = response.config.baseURL || activeBaseUrl || BASE_URL;
     api.defaults.baseURL = activeBaseUrl;
+    backendManager.markSuccess(activeBaseUrl, 'response');
+    const durationMs = response.config.metadata?.startedAt
+      ? Date.now() - response.config.metadata.startedAt
+      : undefined;
     console.log(
       `[API Response] ${response.config.url} => Status:`,
       response.status,
+      durationMs ? `(${durationMs}ms)` : '',
     );
     return response;
   },
-  error => {
+  async error => {
+    const details = describeAxiosError(error);
+    const currentBaseUrl = error.config?.baseURL || activeBaseUrl || BASE_URL;
+    const triedBaseUrls = unique([
+      ...(error.config?._triedBaseUrls || []),
+      currentBaseUrl,
+    ]);
+
     if (error.response) {
+      backendManager.markSuccess(currentBaseUrl, 'error-response');
       console.error(
         '[API Error - Response Data]',
         error.response.status,
         error.response.data,
       );
-    } else if (error.request) {
-      const currentBaseUrl = error.config?.baseURL || BASE_URL;
-      const triedBaseUrls = unique([
-        ...(error.config?._triedBaseUrls || []),
-        currentBaseUrl,
-      ]);
-      const nextBaseUrl = USE_DEPLOYED ? undefined : getNextBaseUrl(triedBaseUrls);
+    } else if (
+      details.retryable &&
+      error.config &&
+      shouldRetryWithAlternateHost(details)
+    ) {
+      backendManager.markFailure(currentBaseUrl, details, 'request');
+      const nextBaseUrl = await backendManager.getNextRetryBaseUrl({
+        triedBaseUrls,
+        reason: `${error.config.method?.toUpperCase() || 'REQUEST'} ${error.config.url || ''}`,
+      });
 
       if (nextBaseUrl && error.config) {
         logRecoverableApiIssue(
           '[API Warning - Retrying with alternate backend host]',
-          `${currentBaseUrl} did not respond. Trying ${nextBaseUrl}.`,
+          `${currentBaseUrl} failed (${details.type}: ${details.message}). Trying ${nextBaseUrl}.`,
         );
         return api.request({
           ...error.config,
           baseURL: nextBaseUrl,
-          _triedBaseUrls: [...triedBaseUrls, nextBaseUrl],
+          _backendBaseUrlLocked: true,
+          _triedBaseUrls: triedBaseUrls,
         });
       }
 
       logRecoverableApiIssue(
-        '[API Warning - No Response Received]',
+        '[API Warning - Backend Unreachable]',
         `${triedBaseUrls.join(', ')} did not respond.`,
-        'Ensure Spring Boot is running on port 8080.',
-        isAndroidReverseHost
-          ? 'For a physical Android device, run: npm run reverse:backend or adb reverse tcp:8080 tcp:8080'
-          : '',
+        `type=${details.type}`,
+        details.code ? `code=${details.code}` : '',
+        getBackendDiagnosticHint(currentBaseUrl, details),
         error.message,
       );
     } else {
-      console.error('[API Error - Setup Message]', error.message);
+      console.error(
+        '[API Error - Setup Message]',
+        details.code ? `code=${details.code}` : '',
+        details.message,
+      );
     }
     return Promise.reject(error);
   },
