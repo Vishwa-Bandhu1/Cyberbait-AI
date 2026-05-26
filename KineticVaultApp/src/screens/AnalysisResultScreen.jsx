@@ -6,6 +6,7 @@ import NeonButton from '../components/NeonButton';
 import RiskMeter from '../components/RiskMeter';
 import KeywordBadge from '../components/KeywordBadge';
 import { COLORS } from '../theme';
+import Svg, { Path, Circle } from 'react-native-svg';
 
 const AnalysisResultScreen = ({ route, navigation }) => {
   const { result, sender } = route.params;
@@ -196,57 +197,73 @@ const AnalysisResultScreen = ({ route, navigation }) => {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Text style={styles.backText}>‹ Back</Text>
+            <Text style={[styles.backText, { color: '#00FF41' }]}>{'< Back'}</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Threat Analysis</Text>
           <View style={{ width: 60 }} />
         </View>
 
-        {/* Warning Banner */}
-        <GlassCard style={styles.warningCard} glowColor={threatColor}>
-          <View style={styles.warningContent}>
-            <Text style={styles.warningEmoji}>⚠️</Text>
-            <View style={styles.warningTextContainer}>
-              <Text style={[styles.warningTitle, { color: threatColor }]}>
-                THREAT DETECTED
+        {/* Threat Status Card */}
+        <GlassCard style={styles.threatCard} glowColor={threatColor}>
+          <View style={styles.threatContent}>
+            <View style={styles.shieldContainer}>
+              <View style={[styles.outerRing, { borderColor: threatColor }]} />
+              <View style={[styles.innerRing, { borderColor: threatColor }]} />
+              <Svg width="44" height="44" viewBox="0 0 24 24" fill="none">
+                <Path d="M12 22C12 22 20 18 20 12V5L12 2L4 5V12C4 18 12 22 12 22Z" fill={threatColor} />
+                <Path d="M12 22C12 22 20 18 20 12V5L12 2V22Z" fill="#000000" opacity="0.15" />
+              </Svg>
+              <View style={[styles.dot, styles.dotTopLeft, { backgroundColor: threatColor }]} />
+              <View style={[styles.dot, styles.dotBottomRight, { backgroundColor: threatColor }]} />
+            </View>
+            <View style={styles.threatTextContainer}>
+              <Text style={[styles.threatTitle, { color: threatColor }]}>
+                Threat Detected
               </Text>
-              <Text style={styles.warningSubtitle}>
-                Risk Level: {result.threatLevel}
+              <Text style={styles.threatSubtitle}>
+                This content shows signs of potential risk.
               </Text>
+              <View style={[styles.riskBadge, { borderColor: threatColor }]}>
+                <Text style={[styles.riskBadgeText, { color: threatColor }]}>
+                  {result.threatLevel.toUpperCase()} RISK
+                </Text>
+              </View>
             </View>
           </View>
         </GlassCard>
-
-        {/* Risk Score */}
-        <View style={styles.riskSection}>
-          <RiskMeter score={result.riskScore} size={140} />
-          <Text style={styles.riskLabel}>Risk Score</Text>
-        </View>
 
         {/* Confidence */}
         <GlassCard style={styles.confidenceCard}>
           <View style={styles.confidenceRow}>
             <View style={styles.confidenceItem}>
-              <Text style={styles.confidenceValue}>{result.riskScore}%</Text>
-              <Text style={styles.confidenceLabel}>Confidence</Text>
-            </View>
-            <View style={styles.confidenceDivider} />
-            <View style={styles.confidenceItem}>
-              <Text
-                style={[styles.confidenceValue, { color: threatColor }]}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.5}
-              >
-                {result.threatLevel}
-              </Text>
+              <View style={{ alignItems: 'center' }}>
+                <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ marginBottom: 4 }}>
+                  <Circle cx="12" cy="12" r="10" stroke={threatColor} strokeWidth="2" />
+                  <Circle cx="12" cy="12" r="6" stroke={threatColor} strokeWidth="2" />
+                  <Circle cx="12" cy="12" r="2" fill={threatColor} />
+                </Svg>
+                <Text
+                  style={[styles.confidenceValue, { color: threatColor, fontSize: 18 }]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.5}
+                >
+                  {result.threatLevel.toUpperCase()}
+                </Text>
+              </View>
               <Text style={styles.confidenceLabel}>Threat Level</Text>
             </View>
             <View style={styles.confidenceDivider} />
             <View style={styles.confidenceItem}>
-              <Text style={styles.confidenceValue}>
-                {result.keywords?.length || 0}
-              </Text>
+              <View style={{ alignItems: 'center' }}>
+                <Svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ marginBottom: 4 }}>
+                  <Circle cx="11" cy="11" r="7" stroke="#A855F7" strokeWidth="2" />
+                  <Path d="M21 21L16 16" stroke="#A855F7" strokeWidth="2" strokeLinecap="round" />
+                </Svg>
+                <Text style={styles.confidenceValue}>
+                  {result.keywords?.length || 0}
+                </Text>
+              </View>
               <Text style={styles.confidenceLabel}>Keywords</Text>
             </View>
           </View>
@@ -355,38 +372,79 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
-  warningCard: {
+  threatCard: {
     marginBottom: 24,
+    paddingVertical: 8,
   },
-  warningContent: {
+  threatContent: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  warningEmoji: {
-    fontSize: 36,
+  shieldContainer: {
+    position: 'relative',
+    width: 80,
+    height: 80,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: 16,
   },
-  warningTextContainer: {},
-  warningTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: 1,
+  outerRing: {
+    position: 'absolute',
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    borderWidth: 1,
+    opacity: 0.1,
   },
-  warningSubtitle: {
+  innerRing: {
+    position: 'absolute',
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    borderWidth: 1,
+    opacity: 0.2,
+  },
+  dot: {
+    position: 'absolute',
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+  },
+  dotTopLeft: {
+    top: 14,
+    left: 8,
+  },
+  dotBottomRight: {
+    bottom: 14,
+    right: 8,
+  },
+  threatTextContainer: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  threatTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  threatSubtitle: {
     color: COLORS.textSecondary,
     fontSize: 13,
-    marginTop: 4,
+    lineHeight: 18,
+    marginBottom: 12,
   },
-  riskSection: {
-    alignItems: 'center',
-    marginBottom: 24,
+  riskBadge: {
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: 'rgba(0,0,0,0.2)',
   },
-  riskLabel: {
-    color: COLORS.textSecondary,
-    fontSize: 14,
-    fontWeight: '600',
-    marginTop: 12,
-    letterSpacing: 1,
+  riskBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   confidenceCard: {
     marginBottom: 24,

@@ -10,7 +10,7 @@
 - **Proactive Sender Blocking**: Integrates Android's Call Screening and Default SMS roles, enabling users to instantly block detected phishing senders directly from the threat analysis screen.
 - **AI-Powered Analysis**: Seamlessly integrates with **MIET AI Gateway (College AI API)** for rapid evaluation of potential cybersecurity threats.
 - **OEM-Specific Optimization**: Specialized fallback mechanisms for **Realme, Oppo, and Vivo** devices to ensure reliable background detection despite aggressive battery management.
-- **Cross-Platform Mobile App**: Built with React Native CLI, featuring a premium dark-mode UI with smooth animations (Reanimated v4, Lottie).
+- **Cross-Platform Mobile App**: Built with React Native CLI, featuring a premium cyber-themed dark-mode UI with smooth animations, responsive risk meters, and dynamic keyword visualization (Reanimated v4, Lottie).
 - **On-Device OCR**: Extracts text from screenshots and suspicious documents utilizing **Tesseract OCR**.
 - **Professional Security Reports**: Automatically compiles findings into downloadable, structured PDF reports using **iText 7**.
 - **Secure Cloud Sync**: Stores analysis history and reports securely in a **MongoDB Atlas** cluster.

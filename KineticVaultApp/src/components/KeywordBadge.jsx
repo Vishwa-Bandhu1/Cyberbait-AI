@@ -29,7 +29,6 @@ const KeywordBadge = ({word, confidence, type}) => {
       <View style={styles.content}>
         <Text style={[styles.word, {color}]}>{word}</Text>
         <View style={styles.meta}>
-          <Text style={[styles.confidence, {color}]}>{confidence}%</Text>
           <View style={[styles.typeDot, {backgroundColor: color}]} />
           <Text style={styles.type}>{type?.replace('_', ' ')}</Text>
         </View>
@@ -69,7 +68,7 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    marginHorizontal: 6,
+    marginRight: 6,
   },
   type: {
     fontSize: SIZES.fontXS,
