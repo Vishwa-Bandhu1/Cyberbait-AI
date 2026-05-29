@@ -106,7 +106,68 @@ cd Kinetic-Vault
 
 ---
 
+## 🌐 Deployment & Live Demo
+
+You can deploy the CyberBait system into a production environment by hosting the Spring Boot backend and configuring the React Native client to communicate with the live instance.
+
+### 1. Backend Deployment
+
+The backend is built as a standard Maven Spring Boot application. It can be easily deployed to containerized hosting platforms (e.g., **Render**, **Railway**, **Heroku**, or **AWS ECS/Elastic Beanstalk**).
+
+#### Environment Variables
+Ensure the following environment variables are set in your production host environment:
+- `SPRING_DATA_MONGODB_URI`: Your MongoDB Atlas production connection string.
+- `AI_GATEWAY_TOKEN`: The API token key for the MIET AI Gateway.
+- `APP_CORS_ALLOWED_ORIGINS`: Allowed origins (e.g. your domains or `*` for public access).
+
+#### Manual Package Build
+Build a production-ready standalone executable JAR:
+```bash
+cd kineticvault-backend
+./mvnw clean package -DskipTests
+```
+Run the compiled JAR:
+```bash
+java -jar target/kineticvault-backend-0.0.1-SNAPSHOT.jar
+```
+
+---
+
+### 2. Frontend Configuration
+
+To configure the mobile app to point to your live backend:
+
+1. Open [KineticVaultApp/src/services/api.js](file:///d:/Major%20Project/Kinetic%20Vault/KineticVaultApp/src/services/api.js).
+2. Set the `USE_DEPLOYED` toggle to `true` and update `DEPLOYED_URL` with your live server link:
+   ```javascript
+   const USE_DEPLOYED = true;
+   const DEPLOYED_URL = 'https://your-deployed-backend-url.com/api';
+   ```
+3. Re-bundle the application or build a release binary:
+   - **Android Release APK Build**:
+     ```bash
+     cd KineticVaultApp/android
+     ./gradlew assembleRelease
+     ```
+     The signed/unsigned release APK will be generated at `KineticVaultApp/android/app/build/outputs/apk/release/app-release.apk`.
+
+---
+
+### 📱 Testing & Emulating the Live Demo
+
+To test or demo the application without connecting physical SIMs, you can use the Android Emulator's system broadcast tool to emulate incoming texts:
+
+```bash
+adb shell am broadcast \
+  -a android.provider.Telephony.SMS_RECEIVED \
+  --es pdus "07914407272222f2040b914407272222f20000602021815124020a5465737420534d53"
+```
+*Note: Ensure your emulator has the app active and has requested the appropriate SMS roles.*
+
+---
+
 ## 🛡️ License
 
 This project is licensed under the MIT License - see the `LICENSE` file for details.
+
 
