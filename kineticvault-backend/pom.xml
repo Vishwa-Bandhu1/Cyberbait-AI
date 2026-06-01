@@ -57,7 +57,7 @@
 		<!-- iText PDF Generation -->
 		<dependency>
 			<groupId>com.itextpdf</groupId>
-			<artifactId>itext7-core</artifactId>
+			<artifactId>itext-core</artifactId>
 			<version>8.0.4</version>
 			<type>pom</type>
 		</dependency>
@@ -92,12 +92,13 @@
 		</dependency>
 
 		<dependency>
-    <groupId>com.fasterxml.jackson.core</groupId>
-    <artifactId>jackson-databind</artifactId>
-</dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+		</dependency>
 	</dependencies>
 
 	<build>
+		<finalName>app</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>

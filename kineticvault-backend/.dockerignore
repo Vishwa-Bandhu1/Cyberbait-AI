@@ -1,0 +1,14 @@
+target/
+.m2-repo/
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+boot-*.err
+boot-*.out
+.env
+.env.*
+!.env.example
+src/main/resources/application-local.properties
+src/main/resources/application-*.secret.properties

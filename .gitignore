@@ -6,6 +6,9 @@ Thumbs.db
 *.swp
 *.bak
 *.tmp
+.env
+.env.*
+!.env.example
 
 # --- Backend (Spring Boot) ---
 kineticvault-backend/target/
@@ -16,7 +19,11 @@ kineticvault-backend/.classpath
 kineticvault-backend/.project
 kineticvault-backend/.settings/
 kineticvault-backend/bin/
-kineticvault-backend/src/main/resources/application.properties
+kineticvault-backend/.env
+kineticvault-backend/.env.*
+!kineticvault-backend/.env.example
+kineticvault-backend/src/main/resources/application-local.properties
+kineticvault-backend/src/main/resources/application-*.secret.properties
 kineticvault-backend/.m2-repo/
 kineticvault-backend/boot-*.err
 kineticvault-backend/boot-*.out

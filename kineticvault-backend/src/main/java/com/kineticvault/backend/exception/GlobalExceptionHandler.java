@@ -1,6 +1,9 @@
 package com.kineticvault.backend.exception;
 
 import com.kineticvault.backend.dto.ErrorResponse;
+import com.kineticvault.backend.util.SensitiveValueSanitizer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -13,6 +16,8 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
@@ -33,12 +38,16 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorResponse> handleRuntime(RuntimeException ex) {
+        logger.error("Unhandled runtime exception ({}): {}",
+                ex.getClass().getSimpleName(), SensitiveValueSanitizer.sanitize(ex.getMessage()));
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("INTERNAL_ERROR", ex.getMessage()));
+                .body(new ErrorResponse("INTERNAL_ERROR", "An internal error occurred"));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneral(Exception ex) {
+        logger.error("Unhandled exception ({}): {}",
+                ex.getClass().getSimpleName(), SensitiveValueSanitizer.sanitize(ex.getMessage()));
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ErrorResponse("SERVER_ERROR", "An unexpected error occurred"));
     }

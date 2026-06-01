@@ -5,6 +5,7 @@ import com.kineticvault.backend.model.Message;
 import com.kineticvault.backend.model.Report;
 import com.kineticvault.backend.repository.MessageRepository;
 import com.kineticvault.backend.repository.ReportRepository;
+import com.kineticvault.backend.util.SensitiveValueSanitizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -146,8 +147,8 @@ public class AnalysisService {
         try {
             return messageRepository.save(message);
         } catch (Exception e) {
-            logger.error("Failed to save analysis history. Returning analysis response without persistence: {}",
-                    e.getMessage(), e);
+            logger.error("Failed to save analysis history. Returning analysis response without persistence ({}): {}",
+                    e.getClass().getSimpleName(), SensitiveValueSanitizer.sanitize(e.getMessage()));
             return message;
         }
     }

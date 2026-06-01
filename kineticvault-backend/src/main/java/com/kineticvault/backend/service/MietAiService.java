@@ -3,6 +3,7 @@ package com.kineticvault.backend.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kineticvault.backend.util.SensitiveValueSanitizer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -91,7 +92,8 @@ public class MietAiService {
                         .timeout(Duration.ofSeconds(AI_TIMEOUT_SECONDS))
                         .block();
 
-                logger.info("MIET AI raw response preview: {}", preview(responseBody));
+                logger.info("MIET AI raw response preview: {}",
+                        SensitiveValueSanitizer.sanitize(preview(responseBody)));
 
                 Map<String, Object> aiAnalysis = parseAiResponse(responseBody, messageText);
                 return strengthenWithRules(aiAnalysis, ruleBasedFallback);
@@ -99,7 +101,8 @@ public class MietAiService {
             } catch (WebClientResponseException e) {
                 lastFailure = e;
                 logger.warn("AI Gateway HTTP error on attempt {}/{}: status={} body={}",
-                        attempt, MAX_ATTEMPTS, e.getStatusCode().value(), preview(e.getResponseBodyAsString()));
+                        attempt, MAX_ATTEMPTS, e.getStatusCode().value(),
+                        SensitiveValueSanitizer.sanitize(preview(e.getResponseBodyAsString())));
                 if (!isRetryableStatus(e.getStatusCode().value()) || attempt == MAX_ATTEMPTS) {
                     break;
                 }
@@ -107,7 +110,7 @@ public class MietAiService {
             } catch (Exception e) {
                 lastFailure = e;
                 logger.warn("AI Gateway analysis failed on attempt {}/{}: {}",
-                        attempt, MAX_ATTEMPTS, e.getMessage());
+                        attempt, MAX_ATTEMPTS, SensitiveValueSanitizer.sanitize(e.getMessage()));
                 if (attempt == MAX_ATTEMPTS) {
                     break;
                 }
@@ -116,7 +119,7 @@ public class MietAiService {
         }
 
         logger.error("AI Gateway unavailable after {} attempts. Falling back to local analysis. Last error: {}",
-                MAX_ATTEMPTS, lastFailure == null ? "unknown" : lastFailure.getMessage());
+                MAX_ATTEMPTS, lastFailure == null ? "unknown" : SensitiveValueSanitizer.sanitize(lastFailure.getMessage()));
         return ruleBasedFallback;
     }
 
@@ -213,7 +216,8 @@ public class MietAiService {
             }
         }
 
-        logger.warn("AI response did not contain parseable structured JSON. Response preview: {}", preview(responseBody));
+        logger.warn("AI response did not contain parseable structured JSON. Response preview: {}",
+                SensitiveValueSanitizer.sanitize(preview(responseBody)));
         return buildRuleBasedAnalysis(originalMessage,
                 "AI returned malformed text, so Kinetic Vault used local scam detection rules.");
     }

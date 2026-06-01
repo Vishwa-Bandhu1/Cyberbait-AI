@@ -29,7 +29,7 @@
 - **Native Modules**: Custom Kotlin modules for SMS interception, call screening, default app role requests, and `react-native-get-sms-android` for robust inbox polling.
 
 ### Backend (Server)
-- **Framework**: Spring Boot 3.4.5 (Java 17)
+- **Framework**: Spring Boot 4.0.5 (Java 17)
 - **Database**: MongoDB (Spring Data MongoDB)
 - **OCR Engine**: Tess4J (Tesseract v5.11)
 - **PDF Generation**: iText 7 Core
@@ -65,13 +65,10 @@ cd Kinetic-Vault
    cd kineticvault-backend
    ```
 2. **Configure Secrets**:
-   Copy the example properties file and fill in your credentials.
-   ```bash
-   cp src/main/resources/application.properties.example src/main/resources/application.properties
-   ```
-   Open `application.properties` and add your:
-   - MongoDB connection string.
-   - MIET AI Gateway Token.
+   Keep secrets in environment variables instead of source files:
+   - `MONGODB_URI`
+   - `AI_GATEWAY_TOKEN`
+   - `APP_CORS_ALLOWED_ORIGINS`
 3. Build and run the server:
    ```bash
    ./mvnw clean install
@@ -110,26 +107,40 @@ cd Kinetic-Vault
 
 You can deploy the CyberBait system into a production environment by hosting the Spring Boot backend and configuring the React Native client to communicate with the live instance.
 
-### 1. Backend Deployment
+### 1. Backend Deployment (Docker & Render Blueprint)
 
-The backend is built as a standard Maven Spring Boot application. It can be easily deployed to containerized hosting platforms (e.g., **Render**, **Railway**, **Heroku**, or **AWS ECS/Elastic Beanstalk**).
+The Spring Boot backend is packaged with a custom Docker configuration and a Render blueprint. This ensures all system-level dependencies (such as **Tesseract OCR** and its language models) are provisioned correctly and automatically.
 
-#### Environment Variables
-Ensure the following environment variables are set in your production host environment:
-- `SPRING_DATA_MONGODB_URI`: Your MongoDB Atlas production connection string.
-- `AI_GATEWAY_TOKEN`: The API token key for the MIET AI Gateway.
-- `APP_CORS_ALLOWED_ORIGINS`: Allowed origins (e.g. your domains or `*` for public access).
+#### Deploying via Render Blueprint
+1. Push your repository to GitHub.
+2. In the Render Dashboard, select **Blueprints** and create a new blueprint instance linking your repository.
+3. Render will auto-discover [kineticvault-backend/render.yaml](file:///d:/Major%20Project/Kinetic%20Vault/kineticvault-backend/render.yaml) to initialize the web service.
+4. Input the required environment variables:
+   - `MONGODB_URI`: Your MongoDB Atlas connection string.
+   - `AI_GATEWAY_TOKEN`: The authentication token for the MIET AI Gateway.
+   - `APP_CORS_ALLOWED_ORIGINS`: Frontend CORS origins (e.g., `*` or specific domains).
 
-#### Manual Package Build
-Build a production-ready standalone executable JAR:
+#### Manual Docker Build
+If deploying to a custom server or cloud environment, you can run the backend container locally or via any Docker hosting service:
+```bash
+cd kineticvault-backend
+docker build -t kineticvault-backend .
+docker run -p 8080:8080 \
+  -e MONGODB_URI="<your_mongodb_uri>" \
+  -e AI_GATEWAY_TOKEN="<your_gateway_token>" \
+  -e APP_CORS_ALLOWED_ORIGINS="*" \
+  kineticvault-backend
+```
+
+#### Manual Non-Docker Build (Native JAR)
+To compile and run on machines where Maven, Java 17, and Tesseract-OCR are installed natively:
 ```bash
 cd kineticvault-backend
 ./mvnw clean package -DskipTests
+java -jar target/app.jar
 ```
-Run the compiled JAR:
-```bash
-java -jar target/kineticvault-backend-0.0.1-SNAPSHOT.jar
-```
+
+See `kineticvault-backend/README.md` for the full Render and MongoDB Atlas deployment checklist.
 
 ---
 
@@ -169,5 +180,4 @@ adb shell am broadcast \
 ## 🛡️ License
 
 This project is licensed under the MIT License - see the `LICENSE` file for details.
-
 
