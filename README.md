@@ -86,11 +86,13 @@ cd Kinetic-Vault
    npm install
    # or yarn install
    ```
-   - **Configure local backend connectivity** (runs automatically with `npm run android` or `npm run start`):
+   - **Production Backend Target**: The app is pre-configured to point directly to the live production API at `https://cyberbait-ai.onrender.com/api`.
+   - **Configure Local Backend Target** (Optional for local development):
+     To test changes against your local Spring Boot instance, revert `USE_DEPLOYED` to `false` in `src/services/api.js` and run:
      ```bash
      npm run configure:backend
      ```
-     *This script auto-detects connected USB devices to set up `adb reverse` (port 8080 mapping) or resolves local Wi-Fi LAN IP to enable physical devices to reach the backend host.*
+     *This script auto-detects connected USB devices to set up `adb reverse` (port 8080 mapping) or resolves local Wi-Fi LAN IP to enable physical devices to reach the local backend host.*
    - **For Android**:
      ```bash
      npm run android

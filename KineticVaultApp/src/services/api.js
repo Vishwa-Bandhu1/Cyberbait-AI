@@ -8,8 +8,8 @@ import {
 } from './connectivity';
 
 // Set this to true when testing against the live Render backend.
-const USE_DEPLOYED = false;
-const DEPLOYED_URL = 'https://kineticvault-backend.onrender.com/api';
+const USE_DEPLOYED = true;
+const DEPLOYED_URL = 'https://cyberbait-ai.onrender.com/api';
 const SCAN_HISTORY_KEY = 'scan_history';
 const MAX_LOCAL_HISTORY_ITEMS = 100;
 const API_BASE_URLS = getApiBaseUrls({
@@ -95,26 +95,8 @@ const shouldRetryWithAlternateHost = details =>
     details.type,
   );
 
-const isLoopbackBaseUrl = baseUrl =>
-  /^https?:\/\/(127\.0\.0\.1|localhost)(?::\d+)?/i.test(baseUrl || '');
-
 const getBackendDiagnosticHint = (baseUrl, details) => {
-  if (
-    networkSummary.runtimeTarget === 'android-device' &&
-    isLoopbackBaseUrl(baseUrl) &&
-    ['timeout', 'unreachable', 'refused'].includes(details.type)
-  ) {
-    return 'adb reverse is missing, stale, or the backend is not listening on laptop port 8080. Run: adb reverse tcp:8080 tcp:8080 and verify with adb reverse --list.';
-  }
-
-  if (
-    networkSummary.runtimeTarget === 'android-device' &&
-    networkSummary.backendMode === 'lan'
-  ) {
-    return 'LAN mode requires the phone to route to the laptop IP. USB tethering normally should use adb reverse mode instead.';
-  }
-
-  return 'Ensure Spring Boot is running on port 8080, bound to 0.0.0.0, and reachable from this device.';
+  return 'Ensure the backend service is running and reachable.';
 };
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
