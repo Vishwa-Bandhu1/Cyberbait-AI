@@ -11,38 +11,38 @@ Thumbs.db
 !.env.example
 
 # --- Backend (Spring Boot) ---
-kineticvault-backend/target/
-kineticvault-backend/.mvn/
-kineticvault-backend/mvnw
-kineticvault-backend/mvnw.cmd
-kineticvault-backend/.classpath
-kineticvault-backend/.project
-kineticvault-backend/.settings/
-kineticvault-backend/bin/
-kineticvault-backend/.env
-kineticvault-backend/.env.*
-!kineticvault-backend/.env.example
-kineticvault-backend/src/main/resources/application-local.properties
-kineticvault-backend/src/main/resources/application-*.secret.properties
-kineticvault-backend/.m2-repo/
-kineticvault-backend/boot-*.err
-kineticvault-backend/boot-*.out
+Cyberbait-backend/target/
+Cyberbait-backend/.mvn/
+Cyberbait-backend/mvnw
+Cyberbait-backend/mvnw.cmd
+Cyberbait-backend/.classpath
+Cyberbait-backend/.project
+Cyberbait-backend/.settings/
+Cyberbait-backend/bin/
+Cyberbait-backend/.env
+Cyberbait-backend/.env.*
+!Cyberbait-backend/.env.example
+Cyberbait-backend/src/main/resources/application-local.properties
+Cyberbait-backend/src/main/resources/application-*.secret.properties
+Cyberbait-backend/.m2-repo/
+Cyberbait-backend/boot-*.err
+Cyberbait-backend/boot-*.out
 
 # --- Frontend (React Native) ---
-KineticVaultApp/node_modules/
-KineticVaultApp/npm-debug.log
-KineticVaultApp/yarn-error.log
-KineticVaultApp/.gradle/
-KineticVaultApp/local.properties
-KineticVaultApp/android/build/
-KineticVaultApp/android/app/build/
-KineticVaultApp/android/.gradle/
-KineticVaultApp/android/*.keystore
-!KineticVaultApp/android/debug.keystore
-KineticVaultApp/ios/Pods/
-KineticVaultApp/ios/build/
-KineticVaultApp/*.jsbundle
-KineticVaultApp/coverage/
+Cyberbait-frontend/node_modules/
+Cyberbait-frontend/npm-debug.log
+Cyberbait-frontend/yarn-error.log
+Cyberbait-frontend/.gradle/
+Cyberbait-frontend/local.properties
+Cyberbait-frontend/android/build/
+Cyberbait-frontend/android/app/build/
+Cyberbait-frontend/android/.gradle/
+Cyberbait-frontend/android/*.keystore
+!Cyberbait-frontend/android/debug.keystore
+Cyberbait-frontend/ios/Pods/
+Cyberbait-frontend/ios/build/
+Cyberbait-frontend/*.jsbundle
+Cyberbait-frontend/coverage/
 
 # --- Artifacts ---
 *.apk

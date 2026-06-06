@@ -2,6 +2,9 @@
 
 **CyberBait** is a full-stack, cross-platform cybersecurity companion application designed to protect users from scam conversations and phishing threats. It leverages advanced AI models to analyze suspicious texts, extracts insights from images using OCR, and provides real-time protection against malicious SMS messages.
 
+> [!NOTE]
+> **Project Renaming Update**: The project has been renamed from **KineticVault** to **CyberBait**. The repository directory structure has been updated accordingly: `KineticVaultApp` is now `Cyberbait-frontend`, and `kineticvault-backend` is now `Cyberbait-backend`.
+
 ---
 
 ## 🚀 Features
@@ -62,7 +65,7 @@ cd Kinetic-Vault
 ### 2. Backend Setup
 1. Navigate to the backend directory:
    ```bash
-   cd kineticvault-backend
+   cd Cyberbait-backend
    ```
 2. **Configure Secrets**:
    Keep secrets in environment variables instead of source files:
@@ -79,7 +82,7 @@ cd Kinetic-Vault
 ### 3. Frontend Setup
 1. Navigate to the app directory:
    ```bash
-   cd KineticVaultApp
+   cd Cyberbait-frontend
    ```
 2. Install dependencies:
    ```bash
@@ -116,7 +119,7 @@ The Spring Boot backend is packaged with a custom Docker configuration and a Ren
 #### Deploying via Render Blueprint
 1. Push your repository to GitHub.
 2. In the Render Dashboard, select **Blueprints** and create a new blueprint instance linking your repository.
-3. Render will auto-discover [kineticvault-backend/render.yaml](file:///d:/Major%20Project/Kinetic%20Vault/kineticvault-backend/render.yaml) to initialize the web service.
+3. Render will auto-discover [Cyberbait-backend/render.yaml](file:///d:/Major%20Project/Kinetic%20Vault/Cyberbait-backend/render.yaml) to initialize the web service.
 4. Input the required environment variables:
    - `MONGODB_URI`: Your MongoDB Atlas connection string.
    - `AI_GATEWAY_TOKEN`: The authentication token for the MIET AI Gateway.
@@ -125,24 +128,24 @@ The Spring Boot backend is packaged with a custom Docker configuration and a Ren
 #### Manual Docker Build
 If deploying to a custom server or cloud environment, you can run the backend container locally or via any Docker hosting service:
 ```bash
-cd kineticvault-backend
-docker build -t kineticvault-backend .
+cd Cyberbait-backend
+docker build -t Cyberbait-backend .
 docker run -p 8080:8080 \
   -e MONGODB_URI="<your_mongodb_uri>" \
   -e AI_GATEWAY_TOKEN="<your_gateway_token>" \
   -e APP_CORS_ALLOWED_ORIGINS="*" \
-  kineticvault-backend
+  Cyberbait-backend
 ```
 
 #### Manual Non-Docker Build (Native JAR)
 To compile and run on machines where Maven, Java 17, and Tesseract-OCR are installed natively:
 ```bash
-cd kineticvault-backend
+cd Cyberbait-backend
 ./mvnw clean package -DskipTests
 java -jar target/app.jar
 ```
 
-See `kineticvault-backend/README.md` for the full Render and MongoDB Atlas deployment checklist.
+See `Cyberbait-backend/README.md` for the full Render and MongoDB Atlas deployment checklist.
 
 ---
 
@@ -150,7 +153,7 @@ See `kineticvault-backend/README.md` for the full Render and MongoDB Atlas deplo
 
 To configure the mobile app to point to your live backend:
 
-1. Open [KineticVaultApp/src/services/api.js](file:///d:/Major%20Project/Kinetic%20Vault/KineticVaultApp/src/services/api.js).
+1. Open [Cyberbait-frontend/src/services/api.js](file:///d:/Major%20Project/Kinetic%20Vault/Cyberbait-frontend/src/services/api.js).
 2. Set the `USE_DEPLOYED` toggle to `true` and update `DEPLOYED_URL` with your live server link:
    ```javascript
    const USE_DEPLOYED = true;
@@ -159,10 +162,10 @@ To configure the mobile app to point to your live backend:
 3. Re-bundle the application or build a release binary:
    - **Android Release APK Build**:
      ```bash
-     cd KineticVaultApp/android
+     cd Cyberbait-frontend/android
      ./gradlew assembleRelease
      ```
-     The signed/unsigned release APK will be generated at `KineticVaultApp/android/app/build/outputs/apk/release/app-release.apk`.
+     The signed/unsigned release APK will be generated at `Cyberbait-frontend/android/app/build/outputs/apk/release/app-release.apk`.
 
 ---
 
